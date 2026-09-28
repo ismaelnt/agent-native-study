@@ -1,0 +1,27 @@
+{
+  "name": "agent-native-study",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "ex1": "node --env-file=.env --import tsx exemplo-1-na-mao/server.ts",
+    "ex2": "node --env-file=.env --import tsx exemplo-2-actions/server.ts",
+    "ex3": "pnpm --dir exemplo-3-agent-native dev",
+    "ex4": "npm --prefix exemplo-4-ai-sdk run dev",
+    "setup:ex3": "pnpm --dir exemplo-3-agent-native install",
+    "setup:ex4": "npm --prefix exemplo-4-ai-sdk install",
+    "test:ex4": "npm --prefix exemplo-4-ai-sdk test",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "latest",
+    "express": "^4.21.2",
+    "zod": "^4.1.0"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}

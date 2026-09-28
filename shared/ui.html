@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Painel de pedidos</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: system-ui, sans-serif; margin: 0; background: #f5f5f4; color: #1c1917; }
+  header { padding: 16px 24px; background: #1c1917; color: #fafaf9; }
+  header small { opacity: .7; }
+  main { display: grid; grid-template-columns: 1fr 380px; gap: 16px; padding: 16px 24px; }
+  @media (max-width: 800px) { main { grid-template-columns: 1fr; } }
+  section { background: #fff; border-radius: 10px; padding: 16px; box-shadow: 0 1px 2px #0001; }
+  h2 { margin: 0 0 12px; font-size: 16px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  td, th { padding: 8px; text-align: left; border-bottom: 1px solid #e7e5e4; }
+  tr.sel { background: #fef3c7; }
+  tbody tr { cursor: pointer; }
+  .status { font-size: 12px; padding: 2px 8px; border-radius: 99px; background: #e7e5e4; }
+  .cancelado { background: #fee2e2; color: #991b1b; } .enviado { background: #dbeafe; color: #1e40af; }
+  button { cursor: pointer; border: 1px solid #d6d3d1; background: #fff; border-radius: 6px; padding: 4px 10px; }
+  #chat { display: flex; flex-direction: column; height: 460px; }
+  #mensagens { flex: 1; overflow-y: auto; font-size: 14px; }
+  .msg { margin: 8px 0; padding: 8px 10px; border-radius: 8px; white-space: pre-wrap; }
+  .user { background: #e7e5e4; } .bot { background: #ecfccb; }
+  .log { font-family: ui-monospace, monospace; font-size: 12px; color: #57534e; }
+  form { display: flex; gap: 8px; margin-top: 8px; }
+  input { flex: 1; padding: 8px; border: 1px solid #d6d3d1; border-radius: 6px; }
+  #erro { color: #b91c1c; font-size: 13px; min-height: 18px; }
+</style>
+</head>
+<body>
+<header><strong>Painel de pedidos</strong> · <small id="modo"></small></header>
+<main>
+  <section>
+    <h2>Pedidos <small style="font-weight:normal;color:#78716c">(clique numa linha para selecionar)</small></h2>
+    <table>
+      <thead><tr><th>Id</th><th>Cliente</th><th>Valor</th><th>Status</th><th></th></tr></thead>
+      <tbody id="lista"></tbody>
+    </table>
+    <p id="erro"></p>
+  </section>
+  <section id="chat">
+    <h2>Agente</h2>
+    <div id="mensagens"></div>
+    <form id="form"><input id="texto" placeholder='Ex.: "cancela esse" ou "cancela o 1003"' /><button>Enviar</button></form>
+  </section>
+</main>
+<script>
+  const MODO = "__MODO__";
+  document.getElementById("modo").textContent =
+    MODO === "exemplo-1" ? "Exemplo 1 — UI e agente separados" : "Exemplo 2 — actions compartilhadas";
+
+  let selecionado = null;
+
+  // Cada modo chama um contrato diferente — é exatamente a diferença entre os exemplos.
+  const api = {
+    listar: () => MODO === "exemplo-1"
+      ? fetch("/pedidos").then(r => r.json())
+      : fetch("/actions/listarPedidos", post({})).then(r => r.json()),
+    cancelar: (id) => MODO === "exemplo-1"
+      ? fetch(`/pedidos/${id}/cancelar`, post({}))
+      : fetch("/actions/cancelarPedido", post({ pedidoId: id })),
+  };
+  function post(body) {
+    return { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) };
+  }
+
+  async function render() {
+    const pedidos = await api.listar();
+    document.getElementById("lista").innerHTML = pedidos.map(p => `
+      <tr data-id="${p.id}" class="${p.id === selecionado ? "sel" : ""}">
+        <td>${p.id}</td><td>${p.cliente}</td><td>R$ ${p.valor.toFixed(2)}</td>
+        <td><span class="status ${p.status}">${p.status}</span></td>
+        <td><button data-cancelar="${p.id}">Cancelar</button></td>
+      </tr>`).join("");
+  }
+
+  document.getElementById("lista").addEventListener("click", async (e) => {
+    const erro = document.getElementById("erro");
+    const idCancelar = e.target.dataset?.cancelar;
+    if (idCancelar) {
+      const r = await api.cancelar(idCancelar);
+      erro.textContent = r.ok ? "" : (await r.json()).erro;
+      return render();
+    }
+    const tr = e.target.closest("tr");
+    if (tr) { selecionado = tr.dataset.id === selecionado ? null : tr.dataset.id; render(); }
+  });
+
+  document.getElementById("form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const input = document.getElementById("texto");
+    const mensagem = input.value.trim();
+    if (!mensagem) return;
+    input.value = "";
+    adicionar("user", mensagem);
+    const r = await fetch("/chat", post({ mensagem, tela: { pedidoSelecionado: selecionado } }));
+    const dados = await r.json();
+    if (dados.log?.length) adicionar("log", "tools chamadas:\n" + dados.log.join("\n"));
+    adicionar("bot", dados.resposta ?? dados.erro);
+    render();
+  });
+
+  function adicionar(tipo, texto) {
+    const el = document.createElement("div");
+    el.className = tipo === "log" ? "log" : `msg ${tipo}`;
+    el.textContent = texto;
+    const box = document.getElementById("mensagens");
+    box.appendChild(el);
+    box.scrollTop = box.scrollHeight;
+  }
+
+  render();
+  setInterval(render, 2000); // mantém a tela em dia mesmo quando o agente altera algo
+</script>
+</body>
+</html>
