@@ -10,7 +10,11 @@ import { ActionError, ERRO_INTERNO } from "./errors";
 import { createInMemoryChangeBus, type ChangeEvent } from "./events";
 import { createActionRegistry, type Logger } from "./registry";
 
-const gerente: Actor = { id: "gerente", nome: "Gerente", permissoes: ["pedidos:ler", "pedidos:cancelar"] };
+const gerente: Actor = {
+  id: "gerente",
+  nome: "Gerente",
+  permissoes: ["pedidos:ler", "pedidos:cancelar", "pedidos:restaurar"],
+};
 const estagiario: Actor = { id: "estagiario", nome: "Estagiário", permissoes: ["pedidos:ler"] };
 const ctx = (actor: Actor): ActionContext => ({ actor, origin: "teste", requestId: "t" });
 const silentLogger: Logger = { info() {}, error() {} };
@@ -47,6 +51,14 @@ describe("registry", () => {
     assert.equal((out as { status: string }).status, "cancelado");
     assert.equal(app.events.length, 1);
     assert.equal(app.events[0]?.resource, "pedidos");
+  });
+
+  it("restaura os pedidos de exemplo depois de cancelar", async () => {
+    await app.registry.execute("pedidos_cancelar", { pedidoId: "1004" }, ctx(gerente));
+    const out = (await app.registry.execute("pedidos_restaurar", {}, ctx(gerente))) as { id: string; status: string }[];
+    assert.equal(out.find((p) => p.id === "1004")?.status, "pendente");
+    assert.equal(out.length, 4);
+    await assert.rejects(app.registry.execute("pedidos_restaurar", {}, ctx(estagiario)), { code: "sem_permissao" });
   });
 
   it("não publica evento em action de leitura", async () => {
@@ -117,6 +129,7 @@ describe("registry", () => {
 });
 
 describe("tools do agente", () => {
+  // pedidos_restaurar tem agent: false, então não aparece nem para o gerente.
   it("o agente só recebe as tools que o usuário pode usar", () => {
     const { registry } = setup();
     assert.deepEqual(Object.keys(buildAgentTools(registry, ctx(gerente))).sort(), [

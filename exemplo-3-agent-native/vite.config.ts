@@ -15,6 +15,11 @@ const coreRequire = createRequire(
 
 export default defineConfig({
   optimizeDeps: {
+    // O plugin do agent-native pré-empacota agentkit/react/{root,context,components},
+    // mas não "agentkit/react". O AgentSidebar (core cru) importa AgentKitRoot do
+    // bundle e useAgentKit do arquivo cru: duas cópias do contexto React e o
+    // painel quebra com "AgentKit hooks require an AgentKitProvider".
+    include: ["@agent-native/agentkit/react", "@agent-native/agentkit/protocol"],
     entries: [
       "app/entry.client.tsx",
       "app/root.tsx",

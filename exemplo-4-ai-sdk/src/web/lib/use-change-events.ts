@@ -16,8 +16,11 @@ export function useChangeEvents() {
       const event = JSON.parse(message.data) as ChangeEvent;
       void queryClient.invalidateQueries({ queryKey: [event.resource] });
     };
-    // EventSource reconecta sozinho; ao voltar, recarrega tudo que pode ter mudado.
-    source.onopen = () => void queryClient.invalidateQueries();
+    // EventSource reconecta sozinho; ao voltar, recarrega o que pode ter mudado.
+    // O histórico do chat fica de fora: ele só muda pelo próprio chat, e
+    // recarregá-lo no meio de uma resposta não traz nada de novo.
+    source.onopen = () =>
+      void queryClient.invalidateQueries({ predicate: (q) => q.queryKey[0] !== "chat" });
     return () => source.close();
   }, [queryClient]);
 }

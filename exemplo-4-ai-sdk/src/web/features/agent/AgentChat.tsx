@@ -1,7 +1,7 @@
 import { useChat } from "@ai-sdk/react";
 import { useQuery } from "@tanstack/react-query";
 import { DefaultChatTransport, getToolName, isToolUIPart, type UIMessage } from "ai";
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 
 import { DEV_USER_HEADER, type ScreenState } from "../../../shared/contracts";
 import { fetchChatHistory } from "../../lib/api";
@@ -55,10 +55,12 @@ export function AgentChat({ getScreen }: Props) {
           Nova conversa
         </button>
       </header>
-      {history.isPending ? (
+      {/* Checa `data`, não isPending/error: um refetch em segundo plano que falhe
+          não pode desmontar a conversa (e a resposta em andamento). */}
+      {history.data === undefined && history.isPending ? (
         <p className="muted pad">Carregando conversa…</p>
-      ) : history.error ? (
-        <p className="alert">{history.error.message}</p>
+      ) : history.data === undefined ? (
+        <p className="alert">{history.error?.message ?? "Falha ao carregar a conversa"}</p>
       ) : (
         <ChatSession
           key={chatId}
@@ -97,6 +99,22 @@ function ChatSession(props: {
   });
   const busy = status === "submitted" || status === "streaming";
 
+  // Modelos com "thinking" (ex.: qwen) passam um tempo raciocinando antes do
+  // primeiro texto, e o raciocínio não é enviado (sendReasoning: false). Nesse
+  // intervalo o status já é "streaming", mas não há nada para mostrar: mantém
+  // o indicador até aparecer texto ou tool na última resposta.
+  const ultima = messages.at(-1);
+  const semConteudoAinda =
+    ultima?.role !== "assistant" ||
+    !ultima.parts.some((p) => (p.type === "text" && p.text.trim()) || isToolUIPart(p));
+  const pensando = busy && semConteudoAinda;
+
+  // Rola para o fim quando chega mensagem/pedaço novo.
+  const fimRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    fimRef.current?.scrollIntoView({ block: "end" });
+  }, [messages, pensando]);
+
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
     const text = input.trim();
@@ -120,8 +138,9 @@ function ChatSession(props: {
             })}
           </div>
         ))}
-        {status === "submitted" ? <p className="muted">Pensando… (modelo local pode levar alguns minutos)</p> : null}
+        {pensando ? <p className="muted">Pensando… (modelo local pode levar alguns minutos)</p> : null}
         {error ? <p className="alert">{error.message}</p> : null}
+        <div ref={fimRef} />
       </div>
       <form className="composer" onSubmit={onSubmit}>
         <input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Pergunte ao agente…" />

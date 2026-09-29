@@ -8,20 +8,37 @@ interface Props {
 export function PedidosPage({ selecionado, onSelecionar }: Props) {
   const pedidos = useActionQuery("pedidos_listar", {});
   const cancelar = useActionMutation("pedidos_cancelar");
+  const restaurar = useActionMutation("pedidos_restaurar");
   const me = useMe();
 
   // A UI esconde o que o usuário não pode fazer, mas quem GARANTE é o servidor:
   // chamar a action direto (ou pedir ao agente) dá o mesmo "sem permissão".
   const podeCancelar = me.data?.actions.includes("pedidos_cancelar") ?? false;
+  const podeRestaurar = me.data?.actions.includes("pedidos_restaurar") ?? false;
 
   return (
     <section className="pedidos">
-      <header>
-        <h1>Pedidos</h1>
-        <p className="muted">Clique numa linha para selecionar. Depois peça ao agente: “cancela esse”.</p>
+      <header className="pedidos-header">
+        <div>
+          <h1>Pedidos</h1>
+          <p className="muted">Clique numa linha para selecionar. Depois peça ao agente: “cancela esse”.</p>
+        </div>
+        {podeRestaurar ? (
+          <button
+            type="button"
+            disabled={restaurar.isPending}
+            onClick={() => {
+              cancelar.reset();
+              restaurar.mutate({});
+            }}
+          >
+            {restaurar.isPending ? "Restaurando…" : "Restaurar exemplo"}
+          </button>
+        ) : null}
       </header>
 
       {cancelar.error ? <div className="alert">{cancelar.error.message}</div> : null}
+      {restaurar.error ? <div className="alert">{restaurar.error.message}</div> : null}
       {pedidos.error ? <div className="alert">{pedidos.error.message}</div> : null}
 
       {pedidos.isPending ? (

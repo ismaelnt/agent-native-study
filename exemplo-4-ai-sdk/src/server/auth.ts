@@ -9,7 +9,7 @@ import { DEV_USER_HEADER } from "../shared/contracts";
  * Nada além deste arquivo precisa mudar, porque o resto só conhece `Actor`.
  */
 const DEV_USERS: Record<string, Actor> = {
-  gerente: { id: "gerente", nome: "Gerente", permissoes: ["pedidos:ler", "pedidos:cancelar"] },
+  gerente: { id: "gerente", nome: "Gerente", permissoes: ["pedidos:ler", "pedidos:cancelar", "pedidos:restaurar"] },
   estagiario: { id: "estagiario", nome: "Estagiário", permissoes: ["pedidos:ler"] },
 };
 

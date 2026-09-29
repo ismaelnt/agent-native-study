@@ -6,16 +6,13 @@
 // - lá: fetch("/actions/cancelarPedido") escrito à mão + refresh manual da tabela
 // - aqui: useActionMutation("cancelar-pedido"), tipado a partir da action, e a
 //   tabela se atualiza sozinha quando o AGENTE muda o banco (useDbSync no root).
-import {
-  requestAgentSidebarOpen,
-  sendToAgentChat,
-} from "@agent-native/core/client/agent-chat";
+import { sendToAgentChat } from "@agent-native/core/client/agent-chat";
 import {
   actionErrorMessage,
   useActionMutation,
   useActionQuery,
 } from "@agent-native/core/client/hooks";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useSearchParams } from "react-router";
 
 export function meta() {
@@ -38,11 +35,6 @@ export default function PedidosPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const selecionado = searchParams.get("selecionado");
   const [erro, setErro] = useState<string | null>(null);
-
-  // Abre o chat lateral ao entrar na tela: o fluxo é "seleciona e pede ao agente".
-  useEffect(() => {
-    requestAgentSidebarOpen();
-  }, []);
 
   const { data: pedidos = [], isLoading } = useActionQuery("listar-pedidos", {});
   const cancelar = useActionMutation("cancelar-pedido", {
@@ -79,13 +71,11 @@ export default function PedidosPage() {
 
   return (
     <div className="h-full overflow-y-auto p-6">
-      <div className="mb-4 flex items-start justify-between gap-4">
-        <div>
-          <h1 className="mb-1 text-xl font-semibold">Pedidos</h1>
-          <p className="text-sm text-muted-foreground">
-            Marque um pedido e peça ao agente no chat ao lado: "cancela esse".
-          </p>
-        </div>
+      {/* O título "Pedidos" já vem do Header (Layout). */}
+      <div className="mb-4 flex items-center justify-between gap-4">
+        <p className="text-sm text-muted-foreground">
+          Marque um pedido e peça ao agente no chat ao lado: "cancela esse".
+        </p>
         <button
           type="button"
           disabled={resetar.isPending}

@@ -78,6 +78,8 @@ button.ghost { border-color: transparent; background: transparent; color: var(--
 .pedidos { flex: 1; min-width: 0; overflow-y: auto; padding: 24px; }
 .pedidos h1 { margin: 0 0 4px; font-size: 20px; }
 .pedidos header { margin-bottom: 16px; }
+.pedidos-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.pedidos-header button { flex-shrink: 0; }
 table { width: 100%; max-width: 760px; border-collapse: collapse; }
 th { text-align: left; font-weight: 500; color: var(--muted); padding: 8px; border-bottom: 1px solid var(--border); }
 td { padding: 8px; border-bottom: 1px solid var(--border); }

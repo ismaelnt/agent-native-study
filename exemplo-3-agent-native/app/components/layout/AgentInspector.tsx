@@ -34,6 +34,9 @@ export function AgentInspector({
   return (
     <AgentSidebar
       position="right"
+      // Na tela de pedidos o fluxo é "seleciona e pede ao agente", então o chat
+      // já começa aberto (a não ser que o usuário tenha fechado antes).
+      defaultOpen={naTelaDePedidos}
       chatViewTransition
       chatViewTransitionHandoff={chatHomeHandoffPending}
       storageKey="chat"

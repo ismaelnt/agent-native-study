@@ -17,7 +17,17 @@ export interface PedidosRepository {
   listar(): Promise<Pedido[]>;
   buscar(id: string): Promise<Pedido | null>;
   atualizarStatus(id: string, status: StatusPedido): Promise<Pedido>;
+  /** Volta a tabela para os pedidos de exemplo (só para repetir a demo). */
+  restaurar(): Promise<Pedido[]>;
 }
+
+/** Mesmos dados da migração pedidos-002-seed (que não pode mudar depois de aplicada). */
+export const PEDIDOS_INICIAIS: readonly Pedido[] = [
+  { id: "1001", cliente: "Ana", valor: 129.9, status: "pendente" },
+  { id: "1002", cliente: "Bruno", valor: 89.5, status: "pago" },
+  { id: "1003", cliente: "Carla", valor: 249.0, status: "enviado" },
+  { id: "1004", cliente: "Diego", valor: 59.9, status: "pendente" },
+];
 
 export const pedidosMigrations: Migration[] = [
   {
@@ -50,6 +60,7 @@ export function createSqlitePedidosRepository(db: Db): PedidosRepository {
   const listar = db.prepare("SELECT id, cliente, valor, status FROM pedidos ORDER BY id");
   const buscar = db.prepare("SELECT id, cliente, valor, status FROM pedidos WHERE id = ?");
   const atualizar = db.prepare("UPDATE pedidos SET status = ? WHERE id = ? RETURNING id, cliente, valor, status");
+  const inserir = db.prepare("INSERT INTO pedidos (id, cliente, valor, status) VALUES (?, ?, ?, ?)");
 
   return {
     async listar() {
@@ -63,6 +74,18 @@ export function createSqlitePedidosRepository(db: Db): PedidosRepository {
       const row = atualizar.get(status, id);
       if (!row) throw new Error(`Pedido ${id} sumiu durante a atualização`);
       return toPedido(row);
+    },
+    async restaurar() {
+      db.exec("BEGIN");
+      try {
+        db.exec("DELETE FROM pedidos");
+        for (const p of PEDIDOS_INICIAIS) inserir.run(p.id, p.cliente, p.valor, p.status);
+        db.exec("COMMIT");
+      } catch (error) {
+        db.exec("ROLLBACK");
+        throw error;
+      }
+      return listar.all().map(toPedido);
     },
   };
 }

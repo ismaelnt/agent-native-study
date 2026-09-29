@@ -52,11 +52,21 @@ export function createPedidosModule({ repo }: { repo: PedidosRepository }) {
     },
   });
 
+  const restaurar = defineAction({
+    name: "pedidos_restaurar",
+    description: "Restaura os pedidos de exemplo para o estado inicial.",
+    input: z.object({}),
+    permission: "pedidos:restaurar",
+    // Utilidade da demo, não é regra de negócio: fica só na UI, fora das tools do agente.
+    agent: false,
+    run: () => repo.restaurar(),
+  });
+
   return defineModule({
     name: "pedidos",
     agentInstructions:
       'Quando o usuário disser "esse", "este" ou "o selecionado", use o pedidoSelecionado da tela. ' +
       "Se nenhum pedido estiver selecionado, pergunte qual.",
-    actions: [listar, buscar, cancelar],
+    actions: [listar, buscar, cancelar, restaurar],
   });
 }

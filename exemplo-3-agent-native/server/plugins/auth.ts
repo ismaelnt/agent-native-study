@@ -1,19 +1,9 @@
 import { createAuthPlugin } from "@agent-native/core/server";
 
-const rawAppTitle = "Exemplo 3 Agent Native";
-const appTitle = rawAppTitle === "{" + "{APP_TITLE}}" ? "Chat" : rawAppTitle;
-
+// Projeto de estudo: sem tela de login/cadastro. Com AUTH_DISABLED=true (.env)
+// toda requisição roda como o usuário dev local. Sem `marketing` e com
+// rootAuth: false, "/" deixa de servir a landing de login e cai no app
+// (app/routes/_index.tsx redireciona para /pedidos).
 export default createAuthPlugin({
-  workspaceAppPublicPaths: ["/"],
-  marketing: {
-    appName: appTitle,
-    learnMoreUrl: "https://agent-native.com/apps/chat",
-    tagline:
-      "Start from a chat-first agent-native app and add actions, screens, and workflows as you grow.",
-    features: [
-      "Full-page chat with durable threads and tool call history",
-      "Add actions once and use them from chat, UI, HTTP, MCP, A2A, and CLI",
-      "Plug in your own agent runtime or build on the included app-agent loop",
-    ],
-  },
+  rootAuth: false,
 });
